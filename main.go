@@ -7,25 +7,12 @@ import (
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/gideaopinheiro/compilador/sintatico"
+	"github.com/gideaopinheiro/compilador/tipos"
 )
 
-type Token struct {
-	TokenType  string
-	TokenValue string
-}
-
-type TokenPattern struct {
-	TokenType string
-	Pattern   string
-}
-
-type Symbol struct {
-	Index      int
-	TokenType  string
-	TokenValue string
-}
-
-func isToken(value string, tokenPatterns []TokenPattern) (bool, string) {
+func isToken(value string, tokenPatterns []tipos.TokenPattern) (bool, string) {
 	for _, tp := range tokenPatterns {
 		if regexp.MustCompile(fmt.Sprintf(`(?i)^%s$`, tp.Pattern)).MatchString(value) {
 			return true, tp.TokenType
@@ -34,39 +21,38 @@ func isToken(value string, tokenPatterns []TokenPattern) (bool, string) {
 	return false, ""
 }
 
-func shouldIgnoreLine(line string) bool {
-	return strings.HasPrefix(strings.TrimSpace(line), "//")
-}
-
-func CreateSymbolTable(input string, tokenPatterns []TokenPattern) ([]Symbol, error) {
-	var symbols []Symbol
+func CreateSymbolTable(input string, tokenPatterns []tipos.TokenPattern) (map[int]tipos.Token, error) {
+	symbols := make(map[int]tipos.Token)
 	lines := strings.Split(input, "\n")
+	index := 1
 
 	for lineIdx, line := range lines {
-		if shouldIgnoreLine(line) {
-			continue
+		commentIndex := strings.Index(line, "// ")
+		if commentIndex >= 0 {
+			line = line[:commentIndex]
+			lines[lineIdx] = line
 		}
 
 		var accumulator string
-		for colIdx, char := range line {
+		for colIdx, char := range lines[lineIdx] {
 			if char == ' ' || char == ';' {
 				if flag, tokenType := isToken(accumulator, tokenPatterns); flag {
-					symbols = append(symbols, Symbol{
-						Index:      len(symbols) + 1,
+					symbols[index] = tipos.Token{
 						TokenType:  tokenType,
 						TokenValue: accumulator,
-					})
+					}
+					index++
 				} else {
 					message := fmt.Sprintf("Syntax error at line [%d] col [%d]: %s\n", lineIdx+1, colIdx-1, accumulator)
 					return nil, errors.New(message)
 				}
 				if char == ';' {
 					_, tokenType := isToken(string(char), tokenPatterns)
-					symbols = append(symbols, Symbol{
-						Index:      len(symbols) + 1,
+					symbols[index] = tipos.Token{
 						TokenType:  tokenType,
 						TokenValue: string(char),
-					})
+					}
+					index++
 				}
 				accumulator = ""
 			} else {
@@ -76,20 +62,15 @@ func CreateSymbolTable(input string, tokenPatterns []TokenPattern) ([]Symbol, er
 
 		if accumulator != "" {
 			if flag, tokenType := isToken(accumulator, tokenPatterns); flag {
-				symbols = append(symbols, Symbol{
-					Index:      len(symbols) + 1,
+				symbols[index] = tipos.Token{
 					TokenType:  tokenType,
 					TokenValue: accumulator,
-				})
+				}
 			}
 		}
 	}
 
 	return symbols, nil
-}
-
-func Program() {
-	// programa_SOL loop vezes sequência
 }
 
 func main() {
@@ -103,26 +84,24 @@ func main() {
 
 	input := string(inputBytes)
 
-	tokenPatterns := []TokenPattern{
-		{"INICIOPROGRAMA", "programa_SOL"},
-		{"LOOP", "loop"},
-		{"VEZES", "1|2|3|4|5"},
-		{"TEMPO", "20_min|1_hora|1_dia|2_dias|sem_limite|15_min"},
-		{"NAVEGADOR", "navegador"},
-		{"DELIMITADOR", ";"},
-		{"LINK_PDF", `https://[a-zA-Z0-9._-]+\.com/[a-zA-Z0-9._-]+\.pdf`},
-		{"LINK_VIDEO", "https://youtube.com"},
-		{"LINK_VIDEOCONFERENCIA", "https://meet.google.com"},
-		{"LINK_WHATSAPP_WEB", "https://web.whatsapp.com"},
-		{"LINK_EMAIL", "https://gmail.com"},
+	tokenPatterns := []tipos.TokenPattern{
+		{TokenType: "INICIOPROGRAMA", Pattern: "programa_SOL"},
+		{TokenType: "LOOP", Pattern: "loop"},
+		{TokenType: "TEMPO", Pattern: "20_min|1_hora|1_dia|2_dias|sem_limite|15_min"},
+		{TokenType: "VEZES", Pattern: "1|2|3|4|5"},
+		{TokenType: "NAVEGADOR", Pattern: "navegador"},
+		{TokenType: "DELIMITADOR", Pattern: ";"},
+		{TokenType: "LINK_PDF", Pattern: `https://[a-zA-Z0-9._-]+\.com/[a-zA-Z0-9._-]+\.pdf`},
+		{TokenType: "LINK_VIDEO", Pattern: "https://youtube.com"},
+		{TokenType: "LINK_VIDEOCONFERENCIA", Pattern: "https://meet.google.com"},
+		{TokenType: "LINK_WHATSAPP_WEB", Pattern: "https://web.whatsapp.com"},
+		{TokenType: "LINK_EMAIL", Pattern: "https://gmail.com"},
 	}
 
 	symbolTable, err := CreateSymbolTable(input, tokenPatterns)
-
 	if err == nil {
-		for _, symbol := range symbolTable {
-			fmt.Println(symbol)
-		}
+		sintatico := sintatico.NewSintatico(symbolTable)
+		sintatico.Start()
 	} else {
 		fmt.Println(err.Error())
 	}
