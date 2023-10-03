@@ -9,12 +9,14 @@ import (
 type Sintatico struct {
 	symbolTable  map[int]tipos.Token
 	currentIndex int
+	stack        []error
 }
 
 func NewSintatico(sTable map[int]tipos.Token) *Sintatico {
 	return &Sintatico{
 		symbolTable:  sTable,
 		currentIndex: 1,
+		stack:        nil,
 	}
 }
 
@@ -22,7 +24,7 @@ func (s *Sintatico) Start() {
 	if s.programa() {
 		fmt.Println("Análise sintática bem-sucedida.")
 	} else {
-		fmt.Println("Erro de análise sintática.")
+		fmt.Printf("[Erro sintático]\n%v\n", s.stack[len(s.stack)-1])
 	}
 }
 
@@ -176,5 +178,6 @@ func (s *Sintatico) tokenMatches(expectedTokenType string) bool {
 		s.currentIndex++
 		return true
 	}
+	s.stack = append(s.stack, fmt.Errorf("linha %d : \"%s\"  ", s.symbolTable[s.currentIndex].Line, s.symbolTable[s.currentIndex].TokenValue))
 	return false
 }

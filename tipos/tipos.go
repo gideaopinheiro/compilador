@@ -3,6 +3,7 @@ package tipos
 type Token struct {
 	TokenType  string
 	TokenValue string
+	Line       int
 }
 
 type TokenPattern struct {
