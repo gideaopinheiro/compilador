@@ -5,6 +5,6 @@ navegador 20_min;// navegar na Web 20 min;
 // fase Present – Apresentar do Padrão EPIC - via videoconferência meet 20 min
 navegador https://meet.google.com 20_min;
 // fase Interact – Interagir do Padrão EPIC - via videoconferência meet 20 min
-navegador https://meet.google.com 20_min;
+navegador https://meet.google.com 15_min;
 // fase Critique – Crítica do Padrão EPIC – via videoconferência meet 20 min
-navegador 20_min;
+navegador https://gmail.com 20_min;

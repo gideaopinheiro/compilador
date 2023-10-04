@@ -2,27 +2,32 @@ package sintatico
 
 import (
 	"fmt"
+	"os/exec"
+	"time"
 
 	"github.com/gideaopinheiro/compilador/tipos"
 )
 
 type Sintatico struct {
-	symbolTable  map[int]tipos.Token
-	currentIndex int
-	stack        []error
+	symbolTable    map[int]tipos.Token
+	currentIndex   int
+	stack          []error
+	addressesQueue []string
 }
 
 func NewSintatico(sTable map[int]tipos.Token) *Sintatico {
 	return &Sintatico{
-		symbolTable:  sTable,
-		currentIndex: 1,
-		stack:        nil,
+		symbolTable:    sTable,
+		currentIndex:   1,
+		stack:          nil,
+		addressesQueue: nil,
 	}
 }
 
 func (s *Sintatico) Start() {
 	if s.programa() {
-		fmt.Println("Análise sintática bem-sucedida.")
+		launchBrowser(s.addressesQueue)
+		fmt.Println("Ok.")
 	} else {
 		fmt.Printf("[Erro sintático]\n%v\n", s.stack[len(s.stack)-1])
 	}
@@ -46,12 +51,17 @@ func (s *Sintatico) vezes() bool {
 }
 
 func (s *Sintatico) sequencia() bool {
-	if s.present() {
-		return true
-	} else if s.fasesEPIC() {
+	if s.fasesEPIC() && s.recurSequencia() {
 		return true
 	}
 	return false
+}
+
+func (s *Sintatico) recurSequencia() bool {
+	if s.currentIndex >= len(s.symbolTable)-1 {
+		return true
+	}
+	return s.sequencia()
 }
 
 func (s *Sintatico) fasesEPIC() bool {
@@ -146,31 +156,74 @@ func (s *Sintatico) email() bool {
 }
 
 func (s *Sintatico) tempo() bool {
-	return s.tokenMatches("TEMPO")
+	if match := s.tokenMatches("TEMPO"); match {
+		if s.symbolTable[s.currentIndex-2].TokenType == "NAVEGADOR" {
+			s.addressesQueue = append(s.addressesQueue, "https://google.com")
+		}
+		return true
+	}
+	return false
 }
 
 func (s *Sintatico) navegar() bool {
-	return s.tokenMatches("NAVEGADOR")
+	return s.browser()
 }
 
 func (s *Sintatico) linkPDF() bool {
-	return s.tokenMatches("LINK_PDF")
+	if match := s.tokenMatches("LINK_PDF"); match {
+		s.addressesQueue = append(s.addressesQueue, s.symbolTable[s.currentIndex-1].TokenValue)
+		return true
+	}
+	return false
 }
 
 func (s *Sintatico) linkVideo() bool {
-	return s.tokenMatches("LINK_VIDEO")
+	if match := s.tokenMatches("LINK_VIDEO"); match {
+		s.addressesQueue = append(s.addressesQueue, s.symbolTable[s.currentIndex-1].TokenValue)
+		return true
+	}
+	return false
 }
 
 func (s *Sintatico) linkVideoconferencia() bool {
-	return s.tokenMatches("LINK_VIDEOCONFERENCIA")
+	if match := s.tokenMatches("LINK_VIDEOCONFERENCIA"); match {
+		s.addressesQueue = append(s.addressesQueue, s.symbolTable[s.currentIndex-1].TokenValue)
+		return true
+	}
+	return false
 }
 
 func (s *Sintatico) linkWhatsappWeb() bool {
-	return s.tokenMatches("LINK_WHATSAPP_WEB")
+	if match := s.tokenMatches("LINK_WHATSAPP_WEB"); match {
+		s.addressesQueue = append(s.addressesQueue, s.symbolTable[s.currentIndex-1].TokenValue)
+		return true
+	}
+	return false
 }
 
 func (s *Sintatico) linkEmail() bool {
-	return s.tokenMatches("LINK_EMAIL")
+	if match := s.tokenMatches("LINK_EMAIL"); match {
+		s.addressesQueue = append(s.addressesQueue, s.symbolTable[s.currentIndex-1].TokenValue)
+		return true
+	}
+	return false
+}
+
+func launchBrowser(addresses []string) {
+	for _, address := range addresses {
+		cmd := exec.Command("xdg-open", address)
+		err := cmd.Run()
+		if err != nil {
+			panic(err)
+		}
+		time.Sleep(5 * time.Second)
+
+		closeCmd := exec.Command("pkill", "chrome")
+		err = closeCmd.Run()
+		if err != nil {
+			panic(err)
+		}
+	}
 }
 
 func (s *Sintatico) tokenMatches(expectedTokenType string) bool {
