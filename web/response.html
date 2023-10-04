@@ -1,0 +1,11 @@
+<div style="flex-direction: row; justify-content: center; max-width: 40%; margin-left: 620px;">
+  {{if .IsCorrect}}
+    <div class="alert alert-success" role="alert" style="font-size: 1.5rem;">
+      {{.Response}}
+    </div>
+  {{else}}
+  <div class="alert alert-danger" role="alert" style="font-size: 1.5rem;">
+    {{.Response}}
+  </div>
+  {{end}}
+</div>

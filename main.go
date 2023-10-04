@@ -7,9 +7,12 @@ import (
 
 	"github.com/gideaopinheiro/compilador/lexico"
 	"github.com/gideaopinheiro/compilador/sintatico"
+	"github.com/gideaopinheiro/compilador/web"
 )
 
 func main() {
+	server := web.NewServer()
+	server.Start()
 	filename := os.Args[1]
 
 	inputBytes, err := ioutil.ReadFile(filename)

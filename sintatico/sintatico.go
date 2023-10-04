@@ -24,12 +24,12 @@ func NewSintatico(sTable map[int]tipos.Token) *Sintatico {
 	}
 }
 
-func (s *Sintatico) Start() {
+func (s *Sintatico) Start() (string, bool) {
 	if s.programa() {
 		launchBrowser(s.addressesQueue)
-		fmt.Println("Ok.")
+		return "Ok.", true
 	} else {
-		fmt.Printf("[Erro sintático]\n%v\n", s.stack[len(s.stack)-1])
+		return fmt.Sprintf("[Erro sintático]\n%v\n", s.stack[len(s.stack)-1]), false
 	}
 }
 
