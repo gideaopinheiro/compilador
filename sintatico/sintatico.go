@@ -3,6 +3,7 @@ package sintatico
 import (
 	"fmt"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/gideaopinheiro/compilador/tipos"
@@ -26,7 +27,7 @@ func NewSintatico(sTable map[int]tipos.Token) *Sintatico {
 
 func (s *Sintatico) Start() (string, bool) {
 	if s.programa() {
-		launchBrowser(s.addressesQueue)
+		s.launchBrowser(s.addressesQueue)
 		return "Ok.", true
 	} else {
 		return fmt.Sprintf("[Erro sintático]\n%v\n", s.stack[len(s.stack)-1]), false
@@ -209,19 +210,24 @@ func (s *Sintatico) linkEmail() bool {
 	return false
 }
 
-func launchBrowser(addresses []string) {
-	for _, address := range addresses {
-		cmd := exec.Command("xdg-open", address)
-		err := cmd.Run()
-		if err != nil {
-			panic(err)
-		}
-		time.Sleep(5 * time.Second)
+func (s *Sintatico) launchBrowser(addresses []string) {
+	vezes, err := strconv.Atoi(s.symbolTable[3].TokenValue)
+	if err == nil {
+		for idx := 0; idx < vezes; idx++ {
+			for _, address := range addresses {
+				cmd := exec.Command("xdg-open", address)
+				err := cmd.Run()
+				if err != nil {
+					panic(err)
+				}
+				time.Sleep(5 * time.Second)
 
-		closeCmd := exec.Command("pkill", "chrome")
-		err = closeCmd.Run()
-		if err != nil {
-			panic(err)
+				closeCmd := exec.Command("pkill", "chrome")
+				err = closeCmd.Run()
+				if err != nil {
+					panic(err)
+				}
+			}
 		}
 	}
 }
